@@ -9,11 +9,11 @@ executables, SDK libraries, or license files are included.
 | --- | --- |
 | [01_double](01_double/README.md) | Double-Precision Real Solve |
 | [02_float](02_float/README.md) | Single-Precision Real Solve |
-| [03_dcomplex](03_dcomplex/README.md) | Double-Precision Complex Solve |
-| [04_fcomplex](04_fcomplex/README.md) | Single-Precision Complex Solve |
+| [03_double_complex](03_double_complex/README.md) | Double-Precision Complex Solve |
+| [04_float_complex](04_float_complex/README.md) | Single-Precision Complex Solve |
 | [05_csr](05_csr/README.md) | CSR Matrix Input |
-| [06_cpu](06_cpu/README.md) | Host-Memory Matrix Input |
-| [07_l0](07_l0/README.md) | L0 Reordering |
+| [06_cpu_matrix_input](06_cpu_matrix_input/README.md) | Host-Memory Matrix Input |
+| [07_l0_reordering](07_l0_reordering/README.md) | L0 Reordering |
 | [08_multi_rhs](08_multi_rhs/README.md) | Multiple RHS in One Solve Call |
 | [09_refactor](09_refactor/README.md) | Refactorization and Factor Reuse |
 
