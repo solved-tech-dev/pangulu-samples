@@ -5,6 +5,9 @@ Each directory contains `sample.c`, its local `sample_common.h`, a Makefile,
 a short README, and the input data needed for its default run. No prebuilt
 executables, SDK libraries, or license files are included.
 
+Download PanguLU software and purchase licenses from the
+[Solved Technology (解得科技) official website](https://store.solved-tech.com/).
+
 | Directory | Demonstration |
 | --- | --- |
 | [01_double](01_double/README.md) | Double-Precision Real Solve |
