@@ -2,52 +2,53 @@
 
 ## Overview
 
-PanguLU solves sparse linear systems `A*x = b` using direct LU factorization.
-This repository provides complete C samples for real and complex arithmetic,
-single and double precision, CSC and CSR matrix input, host-memory matrix
-input, reordering, multiple right-hand sides (RHS), and refactorization.
-No iterative method or preconditioner is configured by these samples.
+PanguLU solves sparse linear systems `A*x = b` with direct LU factorization.
+The C samples cover real and complex arithmetic, single and double precision,
+CSC and CSR input, host-memory matrix input, reordering, multiple right-hand
+sides (RHS), and refactorization.
 
-The library package, license, product algorithm implementation, and prebuilt
-executables are not included. Download software and purchase licenses from the
-[Solved Technologies (解得科技) official website](https://store.solved-tech.com/).
+The product algorithm implementation, library packages, runtime licenses, and
+prebuilt executables are not included. Download software and purchase licenses
+from the [Solved Technologies (解得科技) official website](https://store.solved-tech.com/).
 
 ## Repository Layout
 
 ```text
 pangulu-samples/
-├── README.md                  # Repository setup and usage
+├── README.md
 ├── Makefile                   # Build or clean all samples
-├── LICENSE                    # Repository source license
-├── 01_double/                 # Double-precision real solve
-├── 02_float/                  # Single-precision real solve
-├── 03_double_complex/         # Double-precision complex solve
-├── 04_float_complex/          # Single-precision complex solve
-├── 05_csr/                    # CSR matrix input
-├── 06_cpu_matrix_input/       # Host-memory matrix input
-├── 07_l0_reordering/          # L0 reordering
-├── 08_multi_rhs/              # Multiple RHS in one solve
-└── 09_refactor/               # Refactorization and factor reuse
+├── common.mk                  # Shared build, run, and clean rules
+├── common/
+│   └── sample_common.h        # Input, transfer, timing, and verification helpers
+├── libraries/
+│   ├── README.md              # Package and license setup
+│   └── <package-name>/        # User-supplied complete package; not committed
+│       ├── include/
+│       ├── lib/
+│       ├── license.key
+│       └── ...                # Preserve all package runtime files
+├── matrices/
+│   ├── README.md              # Shared input inventory
+│   ├── PATTERN_FORMAT.md      # Matrix and RHS formats
+│   └── ...                    # Shared matrix and RHS files
+├── docs/
+│   ├── PRODUCT_GUIDE.md       # C API, configuration, and resource ownership
+│   └── TROUBLESHOOTING.md     # Common problems and recovery steps
+├── 01_double/
+├── 02_float/
+├── 03_double_complex/
+├── 04_float_complex/
+├── 05_csr/
+├── 06_cpu_matrix_input/
+├── 07_l0_reordering/
+├── 08_multi_rhs/
+└── 09_refactor/
 ```
 
-Each sample directory contains `sample.c`, `Makefile`, `README.md`,
-`sample_common.h`, and `data/`. The helper header handles input reading,
-data transfer, timing, and independent residual calculation. Inputs and build
-rules are local to each sample, so a sample directory can also be copied
-elsewhere and built with an explicit package path.
-
-The following package location is recommended for setup. Create `libraries/`
-locally; the downloaded package and its license must not be committed:
-
-```text
-pangulu-samples/
-└── libraries/
-    └── <package-name>/
-        ├── include/
-        ├── lib/
-        ├── license.key
-        └── ...               # Keep all other package files
-```
+Each sample contains `sample.c`, a short `Makefile`, and `README.md`.
+All samples use `common.mk`, `common/sample_common.h`, and shared inputs in
+`matrices/`. Configuration is set through C API calls in `sample.c`; these
+samples do not need `config.json`.
 
 ## Quick Start
 
@@ -56,55 +57,50 @@ pangulu-samples/
 - Linux.
 - The GPU and the toolkit/runtime required by the selected package.
 - A C compiler and GNU Make.
-- A PanguLU package matching the target system and GPU, and a valid license
-  for that package and device.
+- A compatible PanguLU 26.43 package with the single-vector and multiple-vector
+  interfaces described in the [product guide](docs/PRODUCT_GUIDE.md).
+- A valid license matching the package and target device.
 
 Follow the selected package's README for supported GPU models, architectures,
-and toolkit/runtime versions. Check its `BUILD_INFO.json` and `RELEASE_NOTES.md`
-when supplied. Multiple-RHS support requires PanguLU 26.43 or a later compatible
-package exporting `pangulu_multiple_vector_create`.
+compiler requirements, and toolkit/runtime versions. Keep its runtime files
+and architecture subdirectories intact.
 
 ### Library Package and License
 
-1. Download the package for your target GPU and purchase the matching license
-   at [Solved Technologies](https://store.solved-tech.com/).
-2. From the repository root, create `libraries/` with `mkdir -p libraries`,
-   then extract the complete package into `libraries/<package-name>/`.
-3. Place the license at `libraries/<package-name>/license.key`.
-4. Keep all package architecture subdirectories and runtime files intact.
-   Do not edit the license file.
+1. Download the package for your target GPU and purchase its license at
+   [Solved Technologies](https://store.solved-tech.com/).
+2. Extract the complete package into `libraries/<package-name>/`.
+3. Place its license at `libraries/<package-name>/license.key`.
 
-Replace `<package-name>` with the actual extracted directory name, then run
-these commands from the repository root:
-
-```bash
-export PANGULU_SDK="$(pwd)/libraries/<package-name>"
-export PANGULU_LICENSE_PATHS="$PANGULU_SDK/license.key"
+```text
+libraries/
+└── <package-name>/
+    ├── include/
+    ├── lib/
+    ├── license.key
+    └── ...
 ```
 
-Check the package layout before building:
+Replace `<package-name>` with the actual extracted directory name. Package
+files and keys are ignored by Git. The repository's `LICENSE` covers repository
+source and does not replace the product's runtime license.
 
-```bash
-test -f "$PANGULU_SDK/include/pangulu.h"
-test -f "$PANGULU_LICENSE_PATHS"
-```
-
-Set these environment variables again in each new terminal or batch job.
-Runtime license authorization is local and does not require internet access.
-The repository's `LICENSE` covers repository source; it does not replace the
-runtime license required by the downloaded software.
+When exactly one package containing `include/pangulu.h` is present under
+`libraries/`, it is selected automatically. With multiple packages or a package
+elsewhere, set `LIBRARY_ROOT` as shown below. This argument selects a directory.
+`make run` uses the selected package's `license.key` by default. See
+[libraries/README.md](libraries/README.md) for license overrides.
 
 ### Build and Run
 
-After setting up the package and environment above, run from the repository root:
+From the repository root, after package and environment setup:
 
 ```bash
 make -C 01_double
 make -C 01_double run
-make -C 01_double clean
 ```
 
-Or run from the sample directory:
+Or work from the sample directory:
 
 ```bash
 cd 01_double
@@ -113,33 +109,29 @@ make run
 make clean
 ```
 
-From the repository root, build or clean all samples with:
+Build or clean all samples from the repository root:
 
 ```bash
 make
 make clean
 ```
 
-When the package is elsewhere, set its absolute path explicitly:
+Select a package explicitly with an absolute path:
 
 ```bash
-export PANGULU_LICENSE_PATHS="/path/to/package/license.key"
-make -C 01_double SDK_ROOT=/path/to/package
-make -C 01_double run SDK_ROOT=/path/to/package
+make -C 01_double LIBRARY_ROOT=/path/to/package
+make -C 01_double run LIBRARY_ROOT=/path/to/package
 ```
 
-`SDK_ROOT` is the package-directory argument supported by the current
-Makefiles; it selects a package path. `PANGULU_SDK` supplies the same path
-through the environment. `make run` sets the package and configured runtime
-library search paths for the launched program, including indirect dependencies.
-Follow the package's environment setup instructions if its required toolkit
-is installed outside the build defaults.
+Use the same package path for both commands. `make run` sets the selected
+package and runtime library search paths for the launched program. If the
+required development environment uses a nondefault installation path, follow
+[the environment setup instructions](docs/TROUBLESHOOTING.md#toolkit-and-runtime-paths).
 
-`GPU_INDEX` defaults to `0`, the first entry in the ordered licensed-GPU list.
-It is a license-list index, not a physical device ordinal. Select another
-licensed entry with, for example, `make -C 01_double run GPU_INDEX=1`.
-Run `make clean` before changing source, the package, compiler options, or
-the toolkit/runtime environment.
+`GPU_INDEX` defaults to `0`, the first entry in the ordered licensed-GPU list;
+it is not a physical device ordinal. Select another licensed entry with
+`make -C 01_double run GPU_INDEX=1`. Run `make clean` before changing source,
+package, compiler settings, or the toolkit/runtime environment.
 
 ## Samples
 
@@ -157,97 +149,81 @@ the toolkit/runtime environment.
 | [08_multi_rhs](08_multi_rhs/README.md) | Direct LU, shared factors for multiple RHS | CSC, device memory | Real double |
 | [09_refactor](09_refactor/README.md) | Direct LU, refactorization with pattern reuse | CSC, device memory | Real double |
 
-*Single-precision samples convert double-precision input to single precision
-for the solve and validate against the original double-precision system.
-Host-memory matrix input still uses GPU factorization, RHS, and solution
-buffers. L1 reordering enables MC64 matching and scaling; L0 omits MC64 matching.
-Reordering levels and factor-reuse levels are separate configuration options.
+*Single-precision samples convert input to single precision for the solve and
+validate against the original double-precision system. Host-memory matrix input
+still uses GPU computation, RHS, and solution buffers. L1 reordering enables
+MC64 matching/scaling; L0 omits MC64 matching. Reordering and factor reuse are
+separate settings. These direct solves do not use an iterative method or
+preconditioner.
 
 ### Sample Input
 
-Each sample's `data/` directory contains its default matrix and RHS files.
-The [sample READMEs](#samples-list) link to their inputs and show the required
-argument order. These samples do not read `config.json`: configuration is
-set in `sample.c` using the C API, and input paths are command-line arguments.
+Shared matrix and RHS files are in [matrices/](matrices/README.md). The
+[format description](matrices/PATTERN_FORMAT.md) explains symmetry, indexing,
+and RHS layout. Each sample README links to its default files and argument order.
 
-- **Matrix:** Matrix Market coordinate (`.mtx`) format with one-based file
-  indices. Matrices must be square and have positive order, at most `INT32_MAX`.
-  Real samples accept real, integer, or pattern fields; complex samples require
-  a complex field. Pattern entries have value `1`. Declared symmetry is expanded
-  before solving and verification.
-- **In-memory layout:** the reader produces zero-based CSC arrays, or CSR in
-  sample 05, with signed 64-bit compressed pointers and signed 32-bit indices.
-  Real values are scalar elements; complex values use interleaved real and
-  imaginary components. See each row above for solve precision.
-- **RHS:** plain-text `.vec` files without a size header. Real input contains
-  `n` values; complex input contains `n` real/imaginary pairs. Sample 08 packs
-  its RHS columns in column-major order with leading dimension `n`.
-- **Refactorization:** sample 09 requires the same sparse pattern in both
-  matrices, including compressed pointers and indices, with only values changing.
-  Matching dimensions and entry counts alone are insufficient.
-- **Reproducibility:** the supplied inputs are fixed text files with no random
-  seed or reference-solution field. Samples read the RHS from these files;
-  they do not generate it randomly or require a stored known solution.
+- Matrices use Matrix Market coordinate format with one-based file indices.
+  The reader expands declared symmetry and builds zero-based CSC or CSR arrays.
+- Compressed pointers are signed 64-bit integers; indices are signed 32-bit
+  integers. The matrix must be square with positive order at most `INT32_MAX`.
+- Real samples accept real, integer, or pattern input; pattern values are `1`.
+  Complex samples require complex input and store interleaved real/imaginary
+  components. Solve precision is listed above.
+- RHS files contain `n` real values or `n` real/imaginary pairs without a header.
+  Sample 08 packs columns in column-major order with leading dimension `n`.
+- Sample 09 requires identical sparse patterns, including compressed pointers
+  and indices, for both matrices. Only numerical values may change.
+- Inputs are fixed text files with no random seed or reference-solution field.
+  RHS values are read from files rather than generated randomly. Configuration
+  is set in `sample.c`; no JSON file is read.
 
-Replace inputs without editing the Makefile by setting `RUN_ARGS`. For example,
-from the repository root, after setting up the package:
+Replace inputs without editing build rules. From the repository root:
 
 ```bash
 make -C 01_double run RUN_ARGS='/absolute/path/matrix.mtx /absolute/path/rhs.vec'
 ```
 
-Keep the argument order shown in the individual README. Paths in `RUN_ARGS`
-are resolved from the sample directory used by `make -C`.
+Preserve the argument order from the individual README. Relative paths in
+`RUN_ARGS` are resolved from the sample directory used by `make -C`.
 
 ## Output and Verification
 
-Samples print the selected operation, matrix order and expanded nonzero count,
-input paths, and library phase times in milliseconds. Common timing fields are
-`Analysis time`, `Numeric factorisation time`, and `Solving time`. Sample 09
-also prints `Refactorisation time`; samples 08 and 09 identify each RHS result.
-These are direct solves, so there is no iteration count or convergence field.
-Timings cover the library calls, excluding input parsing, application transfers,
-and residual checks.
+Samples print input paths, matrix order and expanded nonzero count, and library
+phase times in milliseconds: `Analysis time`, `Numeric factorisation time`,
+and `Solving time`. Sample 09 also prints `Refactorisation time`. Samples 08
+and 09 label each RHS result. Timing excludes input parsing, application data
+transfers, and host residual checks. A direct solve has no iteration count or
+iterative convergence field.
 
-After downloading the solution, the sample independently computes the original
-linear-system residual `r = b - A*x` on the host. The reported value is:
+API success alone does not establish numerical accuracy. Each solution is
+checked independently on the host against the original system `r = b - A*x`:
 
 ```text
 relative residual = ||r||_inf / ||b||_inf
 ```
 
-For complex vectors, the infinity norm is the maximum complex magnitude.
-For zero RHS, the relative residual is undefined and the sample reports
-`||r||_inf` with an explicit note instead. Residual accumulation uses
-`long double`; single-precision solves are checked against the original input.
-Non-finite values are reported as invalid.
+The RHS infinity norm is printed separately. Complex norms use the maximum
+complex magnitude. For zero RHS, the sample checks the absolute infinity norm
+`||r||_inf` and notes that the relative residual is undefined. Accumulation uses
+`long double`; single-precision solves use the original double-precision input
+for verification.
 
-An API success status does not establish application accuracy. Choose an
-acceptable tolerance for your system and inspect every reported residual.
-The current samples do not print `PASS` or enforce a residual threshold:
-exit code `0` means the execution and reporting workflow completed, and can
-still accompany a large or non-finite residual. Exit code `1` indicates an
-execution/allocation failure; `2` indicates an argument or initial input error.
-`make run` propagates a failed recipe through Make's own nonzero exit code.
-A numerical **PASS** should be accepted only after every original-system
-residual is finite and within the application's required tolerance.
+`verification: PASS` means the original-system residual is finite and no greater
+than `1e-10` for double-precision solves or `1e-5` for single-precision solves.
+For zero RHS, the same limit applies to the absolute residual. A non-finite or
+excessive residual prints `FAIL` and makes the program fail. These sample
+thresholds are examples; assess the accuracy required by your own application.
+
+Program exit code `0` means the execution and all required residual checks
+succeeded. Code `1` indicates execution or verification failure; code `2`
+indicates an argument or initial input error. `make run` reports a failed program
+through Make's own nonzero exit code. See the
+[product guide](docs/PRODUCT_GUIDE.md#results-and-resource-lifetime) for API and
+resource-lifetime details.
 
 ## Troubleshooting
 
-| Problem | What to check |
-| --- | --- |
-| Header not found | Point `PANGULU_SDK` or `SDK_ROOT` to the package containing `include/pangulu.h`. Confirm the selected package's required development environment is installed. |
-| Shared library not found | Keep the package's `lib/` directory intact and use `make run`. For direct execution, set `LD_LIBRARY_PATH` to the package and required runtime library directories. |
-| Indirect runtime library not found | Restore the complete package, including architecture subdirectories, and follow its README to set runtime search paths. A linker search path alone does not resolve every runtime dependency. |
-| License missing, expired, or device mismatch | Check `PANGULU_LICENSE_PATHS`, validity, package compatibility, and the licensed device. Obtain the correct license from [Solved Technologies](https://store.solved-tech.com/). |
-| GPU and package mismatch | Download the package for the actual target GPU and check its supported architecture list. |
-| Build/runtime environment mismatch | Follow the selected package's compiler and toolkit/runtime requirements; avoid mixing libraries from different package versions. |
-| Invalid configuration field | These samples use C API configuration, not JSON. Check configuration keys and values against the package's `include/pangulu.h`, then clean and rebuild. |
-| Cannot read matrix or RHS | Check paths from the sample directory, matrix field and dimensions, and RHS length. Complex samples require real/imaginary pairs. |
-| Solve fails or residual is too large | Inspect the reported phase status, singularity and scaling, precision, RHS, and original-system residual. A direct solve has no iterative convergence flag; API completion alone is insufficient. |
-| Refactorization fails | Use matrices with identical compressed pointers and indices; keep the sparsity pattern unchanged. |
-| Source/package changed but results are stale | Run `make clean`, then build and run again in the same configured environment. |
-
-For C API declarations and available configuration values, use the selected
-package's `include/pangulu.h` and product guide. Each linked `sample.c` shows
-the complete object-creation, execution, verification, and cleanup workflow.
+Start with [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for missing headers,
+shared or indirect runtime libraries, license errors, GPU/package mismatch,
+environment mismatch, configuration errors, input paths, failed solves or
+residual checks, and stale builds after source changes.

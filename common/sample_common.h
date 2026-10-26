@@ -2,7 +2,7 @@
 #define SAMPLE_COMMON_H
 #define _POSIX_C_SOURCE 200809L
 /*
- * Local file-reading, upload, timing, and residual helpers for this sample.
+ * Shared file-reading, upload, timing, and residual helpers for the samples.
  *
  * Everything here reads MatrixMarket (.mtx) matrices and plain-text right-hand
  * side (.vec) files, builds the caller-visible CSC/CSR structures, and checks
@@ -287,18 +287,33 @@ static double residual_real(const spmat_t *a,const double *x,const double *b)
 }
 static double residual_complex(const spmat_t *a,const double *x,const double *b)
 { return residual_real(a,x,b); }
-/* Residual quality is reported independently of API execution status. */
-static int report_residual(const spmat_t *a,const double *x,const double *b)
+#ifndef SAMPLE_RESIDUAL_TOLERANCE
+#define SAMPLE_RESIDUAL_TOLERANCE 1.0e-10L
+#endif
+
+/* Validate the original system independently of API execution status. */
+static int report_residual(const spmat_t *a, const double *x, const double *b)
 {
-    long double n=0,d=0;int status=residual_norms(a,x,b,&n,&d);
-    if(status){
-        printf("|| Ax - b || / || b || = nan (%s)\n",
-            status == -1 ? "residual allocation failed" : "invalid/non-finite residual");
-        return status == -1 ? -1 : 0;
+    long double numerator = 0, denominator = 0;
+    const int status = residual_norms(a, x, b, &numerator, &denominator);
+    if (status != 0)
+    {
+        printf("verification: FAIL (%s)\n",
+               status == -1 ? "residual allocation failed" :
+                              "invalid/non-finite residual");
+        return -1;
     }
-    if(d==0)printf("|| Ax - b ||_inf = %.12Le (zero RHS; relative residual undefined)\n",n);
-    else printf("|| Ax - b || / || b || = %.12Le\n",n/d);
-    return 0;
+    const long double residual = denominator > 0 ? numerator / denominator : numerator;
+    const long double tolerance = SAMPLE_RESIDUAL_TOLERANCE;
+    const int passed = isfinite(residual) && residual <= tolerance;
+    printf("RHS infinity norm = %.12Le\n", denominator);
+    if (denominator == 0)
+        printf("|| Ax - b ||_inf = %.12Le (zero RHS; relative residual undefined)\n",
+               residual);
+    else
+        printf("|| Ax - b || / || b || = %.12Le\n", residual);
+    printf("verification: %s (tolerance %.3Le)\n", passed ? "PASS" : "FAIL", tolerance);
+    return passed ? 0 : -1;
 }
 
 #endif /* SAMPLE_COMMON_H */

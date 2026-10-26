@@ -1,0 +1,11 @@
+.DS_Store
+/libraries/*
+!/libraries/README.md
+/[0-9][0-9]_*/sample
+*.o
+*.d
+*.so
+*.so.*
+*.a
+*.key
+*.log

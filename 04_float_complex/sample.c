@@ -1,4 +1,5 @@
 /* PanguLU sample 04: single complex, CSC, GPU matrix, L1 reordering. */
+#define SAMPLE_RESIDUAL_TOLERANCE 1.0e-5L
 #include "sample_common.h"
 
 int main(int argc, char **argv)

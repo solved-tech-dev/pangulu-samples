@@ -33,9 +33,13 @@ int main(int argc, char **argv)
         fprintf(stderr, "cannot read matrices\n");
         return 2;
     }
-    if (a1.n != a2.n || a1.nnz != a2.nnz)
+    if (a1.n != a2.n || a1.nnz != a2.nnz ||
+        memcmp(a1.ptr, a2.ptr, ((size_t)a1.n + 1) * sizeof(*a1.ptr)) != 0 ||
+        memcmp(a1.idx, a2.idx, (size_t)a1.nnz * sizeof(*a1.idx)) != 0)
     {
         fprintf(stderr, "the two matrices must share the same sparsity pattern\n");
+        spmat_free(&a2);
+        spmat_free(&a1);
         return 2;
     }
     const int64_t n = a1.n;
