@@ -6,7 +6,7 @@ a short README, and the input data needed for its default run. No prebuilt
 executables, SDK libraries, or license files are included.
 
 Download PanguLU software and purchase licenses from the
-[Solved Tech (解得科技) official website](https://store.solved-tech.com/).
+[Solved Technologies (解得科技) official website](https://store.solved-tech.com/).
 
 | Directory | Demonstration |
 | --- | --- |
