@@ -38,6 +38,36 @@ specify filesystem paths. Compiler and toolkit/runtime versions must match
 the package's requirements. Unsupported host or GPU architectures require the
 matching package; changing a path alone cannot make them compatible.
 
+## `GLIBC_2.xx not found`
+
+Check the system C library:
+
+```bash
+getconf GNU_LIBC_VERSION
+```
+
+If the package contains `compat/run`, `make run` selects that launcher
+automatically. The compatibility files are isolated in the package and do not
+replace the host C library.
+
+For a custom executable:
+
+```bash
+source /path/to/toolkit/env.sh
+./libraries/<package-name>/compat/run ./your-program
+```
+
+For an MPI application, wrap every application rank:
+
+```bash
+mpiexec -n N ./libraries/<package-name>/compat/run ./your-program
+```
+
+The compatibility runner must start the process that loads PanguLU. It cannot
+change glibc in a Python, JVM, MPI rank, or other process that has already
+started. If the package has no compatible runner, use a package built for the
+host glibc baseline.
+
 ## Shared Libraries and Indirect Dependencies
 
 Use `make run` to supply the configured package and runtime search paths.

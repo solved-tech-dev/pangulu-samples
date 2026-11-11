@@ -6,7 +6,10 @@ PanguLU solves a sparse square system `A*x = b` using direct LU factorization.
 This guide describes the common C object interface used by the samples.
 The selected package's `include/pangulu.h` is the authority for declarations
 and supported features. Follow that package's README for the GPU and the
-toolkit/runtime required by the selected package.
+toolkit/runtime and Linux C library required by the selected package. If the
+package includes `compat/run`, launch every process that loads PanguLU through
+that runner on hosts with an older glibc. The samples do this automatically for
+`make run`.
 
 The samples require the PanguLU 26.43 interface with a five-argument
 `pangulu_vector_create` and a separate seven-argument

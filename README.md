@@ -62,8 +62,18 @@ samples do not need `config.json`.
 - A valid license matching the package and target device.
 
 Follow the selected package's README for supported GPU models, architectures,
-compiler requirements, and toolkit/runtime versions. Keep its runtime files
-and architecture subdirectories intact.
+compiler requirements, Linux C library requirements, and toolkit/runtime
+versions. Keep its runtime files and architecture subdirectories intact.
+
+Check the system C library with:
+
+```bash
+getconf GNU_LIBC_VERSION
+```
+
+Some packages include a `compat/` directory for hosts whose glibc is older than
+the library requirement. The sample `make run` commands use its `compat/run`
+launcher automatically when it is present.
 
 ### Library Package and License
 
@@ -124,9 +134,25 @@ make -C 01_double run LIBRARY_ROOT=/path/to/package
 ```
 
 Use the same package path for both commands. `make run` sets the selected
-package and runtime library search paths for the launched program. If the
-required development environment uses a nondefault installation path, follow
+package and runtime library search paths for the launched program and selects a
+bundled compatibility runtime when needed. If the required development
+environment uses a nondefault installation path, follow
 [the environment setup instructions](docs/TROUBLESHOOTING.md#toolkit-and-runtime-paths).
+
+To launch another executable with the same package on an older host:
+
+```bash
+./libraries/<package-name>/compat/run ./your-program
+```
+
+For an MPI job, start every application rank through the compatibility runner:
+
+```bash
+mpiexec -n N ./libraries/<package-name>/compat/run ./your-program
+```
+
+The runner changes the process environment before the program starts. It cannot
+replace glibc inside a process that is already running.
 
 `GPU_INDEX` defaults to `0`, the first entry in the ordered licensed-GPU list;
 it is not a physical device ordinal. Select another licensed entry with
@@ -224,6 +250,6 @@ resource-lifetime details.
 ## Troubleshooting
 
 Start with [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for missing headers,
-shared or indirect runtime libraries, license errors, GPU/package mismatch,
-environment mismatch, configuration errors, input paths, failed solves or
-residual checks, and stale builds after source changes.
+shared or indirect runtime libraries, glibc compatibility, license errors,
+GPU/package mismatch, environment mismatch, configuration errors, input paths,
+failed solves or residual checks, and stale builds after source changes.

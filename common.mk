@@ -18,6 +18,8 @@ LDFLAGS += -L"$(LIBRARY_DIR)/lib" -L"$(TOOLKIT_LIB_DIR)" \
     -Wl,-rpath,"$(LIBRARY_DIR)/lib" -Wl,-rpath,"$(TOOLKIT_LIB_DIR)" \
     -Wl,--no-as-needed -Wl,--allow-shlib-undefined
 LDLIBS += -lpangulu -lpangulu_platform -lcudart -ldl -lm
+COMPAT_RUN ?= $(if $(wildcard $(LIBRARY_DIR)/compat/run),$(LIBRARY_DIR)/compat/run)
+COMPAT_PREFIX := $(if $(strip $(COMPAT_RUN)),"$(COMPAT_RUN)")
 
 .PHONY: all check run clean
 all: $(TARGET)
@@ -42,7 +44,7 @@ $(TARGET): sample.c $(SAMPLES_ROOT)/common/sample_common.h Makefile $(SAMPLES_RO
 run: all
 	PANGULU_LICENSE_PATHS="$(PANGULU_LICENSE_PATHS)" \
 	LD_LIBRARY_PATH="$(LIBRARY_DIR)/lib:$(TOOLKIT_LIB_DIR)$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" \
-	    ./$(TARGET) -g "$(GPU_INDEX)" $(RUN_ARGS)
+	    $(COMPAT_PREFIX) ./$(TARGET) -g "$(GPU_INDEX)" $(RUN_ARGS)
 
 clean:
 	$(RM) $(TARGET)
