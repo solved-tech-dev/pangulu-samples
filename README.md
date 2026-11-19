@@ -57,8 +57,8 @@ samples do not need `config.json`.
 - Linux.
 - The GPU and the toolkit/runtime required by the selected package.
 - A C compiler and GNU Make.
-- A compatible PanguLU 26.43 package with the single-vector and multiple-vector
-  interfaces described in the [product guide](docs/PRODUCT_GUIDE.md).
+- A PanguLU package with the vector constructors and device-buffer interfaces
+  described in the [product guide](docs/PRODUCT_GUIDE.md).
 - A valid license matching the package and target device.
 
 Follow the selected package's README for supported GPU models, architectures,
@@ -131,8 +131,15 @@ make -C 01_double run LIBRARY_ROOT=/path/to/package
 
 Use the same package path for both commands. `make run` sets the selected
 package and runtime library search paths for the launched program. If the
-required development environment uses a nondefault installation path, follow
-[the environment setup instructions](docs/TROUBLESHOOTING.md#toolkit-and-runtime-paths).
+required development environment uses a nondefault installation path, including
+a HIP installation, see [toolkit and runtime paths](docs/TROUBLESHOOTING.md#toolkit-and-runtime-paths).
+
+The same source files build against either backend. The sample executables
+record `libpangulu.so` and the system C and math libraries as direct
+dependencies. To run an existing executable with the other backend, use its
+complete package, runtime and license on the corresponding GPU. The target
+Linux userspace must also satisfy the executable's and the library's required
+glibc symbol versions.
 
 `GPU_INDEX` defaults to `0`, the first entry in the ordered licensed-GPU list;
 it is not a physical device ordinal. Select another licensed entry with

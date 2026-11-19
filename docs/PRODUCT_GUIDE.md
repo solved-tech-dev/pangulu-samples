@@ -8,11 +8,10 @@ The selected package's `include/pangulu.h` is the authority for declarations
 and supported features. Follow that package's README for the GPU and the
 toolkit/runtime required by the selected package.
 
-The samples require the PanguLU 26.43 interface with a five-argument
-`pangulu_vector_create` and a separate seven-argument
-`pangulu_multiple_vector_create`. Check these declarations when choosing a
-package; a package with a different vector-constructor signature is incompatible
-with these sources. No product implementation or package is included here.
+The samples require a five-argument `pangulu_vector_create`, a seven-argument
+`pangulu_multiple_vector_create`, and the three [device-buffer functions](#device-buffers).
+Check these declarations in the selected package's header. The samples build
+against CUDA and HIP packages that provide this interface.
 
 ## Objects and Data Types
 

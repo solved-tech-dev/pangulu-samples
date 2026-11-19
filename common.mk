@@ -14,9 +14,10 @@ TARGET := sample
 CC ?= gcc
 CFLAGS ?= -O3 -std=c11 -Wall -Wextra -Wno-unused-function
 CPPFLAGS += -I"$(SAMPLES_ROOT)/common" -I"$(LIBRARY_DIR)/include"
-LDFLAGS += -L"$(LIBRARY_DIR)/lib" -L"$(TOOLKIT_LIB_DIR)" \
-    -Wl,-rpath,"$(LIBRARY_DIR)/lib" -Wl,-rpath,"$(TOOLKIT_LIB_DIR)" \
-    -Wl,--disable-new-dtags -Wl,-rpath-link,"$(TOOLKIT_LIB_DIR)"
+# Resolve the selected SDK's indirect dependencies at link time without
+# recording build-machine paths or backend runtime libraries in the sample ELF.
+LDFLAGS += -L"$(LIBRARY_DIR)/lib" -Wl,--no-copy-dt-needed-entries \
+    -Wl,-rpath-link,"$(LIBRARY_DIR)/lib" -Wl,-rpath-link,"$(TOOLKIT_LIB_DIR)"
 LDLIBS += -lpangulu -lm
 
 .PHONY: all check run clean
@@ -29,8 +30,6 @@ check:
 	    printf '%s\n' 'Missing include/pangulu.h; set LIBRARY_ROOT to the extracted package directory.' >&2; exit 1; }
 	@test -f "$(LIBRARY_DIR)/lib/libpangulu.so" || { \
 	    printf '%s\n' 'Missing package library: lib/libpangulu.so' >&2; exit 1; }
-	@test -f "$(LIBRARY_DIR)/lib/libpangulu_platform.so" || { \
-	    printf '%s\n' 'Missing package library: lib/libpangulu_platform.so' >&2; exit 1; }
 
 $(TARGET): sample.c $(SAMPLES_ROOT)/common/sample_common.h Makefile $(SAMPLES_ROOT)/common.mk | check
 	$(CC) $(CPPFLAGS) $(CFLAGS) sample.c -o $@ $(LDFLAGS) $(LDLIBS)

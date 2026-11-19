@@ -16,16 +16,16 @@ make -C 01_double LIBRARY_ROOT=/path/to/package
 ```
 
 The path must contain `include/` and `lib/`, rather than point to either of
-those subdirectories. Check for `include/pangulu.h`, `lib/libpangulu.so`, and
-`lib/libpangulu_platform.so`. Do not mix headers from one package with libraries
-from another. If a vector-constructor declaration differs from the samples,
+those subdirectories. Check for `include/pangulu.h` and `lib/libpangulu.so`.
+Keep the supporting libraries shipped with the selected package. If a vector-constructor declaration differs from the samples,
 choose a package with the interfaces described in the
 [product guide](PRODUCT_GUIDE.md#scope-and-package-compatibility).
 
 ## Toolkit and Runtime Paths
 
 Install the GPU driver and runtime libraries required by the selected
-package. The examples build with a C compiler and `pangulu.h`. The common rules accept generic installation-path overrides:
+package. The examples build with a C compiler and `pangulu.h`. Set
+`TOOLKIT_ROOT` to your CUDA or HIP installation when building and running:
 
 ```bash
 make -C 01_double LIBRARY_ROOT=/path/to/package TOOLKIT_ROOT=/path/to/toolkit
@@ -33,9 +33,10 @@ make -C 01_double run LIBRARY_ROOT=/path/to/package TOOLKIT_ROOT=/path/to/toolki
 ```
 
 If runtime libraries are outside the detected `lib64/` or `lib/` location,
-supply `TOOLKIT_LIB_DIR=/path/to/runtime/lib` to both commands. These arguments
-specify filesystem paths. Compiler and toolkit/runtime versions must match
-the package's requirements. Unsupported host or GPU architectures require the
+supply `TOOLKIT_LIB_DIR=/path/to/runtime/lib` to both commands. For a toolkit
+with runtime libraries in several directories, pass a colon-separated list,
+such as `TOOLKIT_LIB_DIR=/opt/dtk/lib:/opt/dtk/llvm/lib`. Compiler and runtime
+versions must meet the package's requirements. Unsupported host or GPU architectures require the
 matching package; changing a path alone cannot make them compatible.
 
 ## Shared Libraries and Indirect Dependencies
@@ -52,7 +53,12 @@ export LD_LIBRARY_PATH="/path/to/package/lib:/path/to/runtime/lib${LD_LIBRARY_PA
 ```
 
 Retain additional architecture or runtime paths specified by the package's
-README. Link-time `-L` options do not resolve every indirect runtime dependency.
+README. The sample build uses `-rpath-link` for link-time lookup. At runtime,
+the loader finds the selected package and follows its dependencies. Check the
+executable's direct dependencies with `readelf -d ./sample` and the resolved
+libraries with `ldd ./sample` under the target environment. If the loader reports
+a missing `GLIBC_*` version, check the requirements of both the executable
+and the library named in the error.
 
 ## License Missing, Expired, or Device Mismatch
 
