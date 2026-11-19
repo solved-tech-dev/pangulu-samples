@@ -13,11 +13,11 @@ RUN_ARGS ?= $(DEFAULT_INPUTS)
 TARGET := sample
 CC ?= gcc
 CFLAGS ?= -O3 -std=c11 -Wall -Wextra -Wno-unused-function
-CPPFLAGS += -I"$(SAMPLES_ROOT)/common" -I"$(LIBRARY_DIR)/include" -I"$(TOOLKIT_ROOT)/include"
+CPPFLAGS += -I"$(SAMPLES_ROOT)/common" -I"$(LIBRARY_DIR)/include"
 LDFLAGS += -L"$(LIBRARY_DIR)/lib" -L"$(TOOLKIT_LIB_DIR)" \
     -Wl,-rpath,"$(LIBRARY_DIR)/lib" -Wl,-rpath,"$(TOOLKIT_LIB_DIR)" \
-    -Wl,--no-as-needed -Wl,--allow-shlib-undefined
-LDLIBS += -lpangulu -lpangulu_platform -lcudart -ldl -lm
+    -Wl,--disable-new-dtags -Wl,-rpath-link,"$(TOOLKIT_LIB_DIR)"
+LDLIBS += -lpangulu -lm
 
 .PHONY: all check run clean
 all: $(TARGET)
@@ -31,10 +31,6 @@ check:
 	    printf '%s\n' 'Missing package library: lib/libpangulu.so' >&2; exit 1; }
 	@test -f "$(LIBRARY_DIR)/lib/libpangulu_platform.so" || { \
 	    printf '%s\n' 'Missing package library: lib/libpangulu_platform.so' >&2; exit 1; }
-	@test -f "$(TOOLKIT_ROOT)/include/cuda_runtime.h" || { \
-	    printf '%s\n' 'Set TOOLKIT_ROOT to the development toolkit required by the selected package.' >&2; exit 1; }
-	@test -f "$(TOOLKIT_LIB_DIR)/libcudart.so" || { \
-	    printf '%s\n' 'Set TOOLKIT_LIB_DIR to the runtime library directory required by the selected package.' >&2; exit 1; }
 
 $(TARGET): sample.c $(SAMPLES_ROOT)/common/sample_common.h Makefile $(SAMPLES_ROOT)/common.mk | check
 	$(CC) $(CPPFLAGS) $(CFLAGS) sample.c -o $@ $(LDFLAGS) $(LDLIBS)

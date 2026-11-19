@@ -60,14 +60,16 @@ int main(int argc, char **argv)
         pangulu_config_set(h, PANGULU_REUSE_LEVEL, L1) != PANGULU_STATUS_SUCCESS)
         goto done;
     /* Upload compressed pointers, indices, and values to the selected GPU. */
-    if (upload_matrix_device(a.ptr, a.idx, a.values, n, a.nnz,
+    if (upload_matrix_device(h, a.ptr, a.idx, a.values, n, a.nnz,
                              sizeof(double) * (size_t)a.nnz, &d_ptr, &d_idx,
                              (void **)&d_values) != 0)
         goto done;
     /* RHS and solution always use separate GPU buffers, even for host matrix input. */
-    if (cudaMalloc((void **)&d_b, sizeof(double) * (size_t)n * 2u) != cudaSuccess ||
-        cudaMalloc((void **)&d_x, sizeof(double) * (size_t)n * 2u) != cudaSuccess ||
-        cudaMemset(d_x, 0, sizeof(double) * (size_t)n * 2u) != cudaSuccess)
+    /* Allocation wraps cudaMalloc/hipMalloc and copies wrap cudaMemcpy/hipMemcpy.
+     * Buffers from the matching native runtime also work as DEVICE input.
+     * Use the handle's GPU and finish uploads before calling the solver. */
+    if (pangulu_device_alloc(h, (void **)&d_b, sizeof(double) * (size_t)n * 2u) != PANGULU_STATUS_SUCCESS ||
+        pangulu_device_alloc(h, (void **)&d_x, sizeof(double) * (size_t)n * 2u) != PANGULU_STATUS_SUCCESS)
         goto done;
     /* Describe existing arrays; the application retains their ownership. */
     if (pangulu_matrix_create(&A, PANGULU_MATRIX_LAYOUT_CSC, n, n, a.nnz, 1,
@@ -112,14 +114,16 @@ int main(int argc, char **argv)
             goto done;
         }
     }
-    if (cudaMemcpy(d_b, b, sizeof(double) * (size_t)n * 2u,
-                   cudaMemcpyHostToDevice) != cudaSuccess)
+    /* Upload corresponds to cudaMemcpy/hipMemcpy with host-to-device direction. */
+    if (pangulu_device_copy(h, d_b, b, sizeof(double) * (size_t)n * 2u,
+                   PANGULU_COPY_HOST_TO_DEVICE) != PANGULU_STATUS_SUCCESS)
         goto done;
     if (run_solve(h, A, X, B) != 0)
         goto done;
     /* Download only for application-side validation against the original system. */
-    if (cudaMemcpy(x, d_x, sizeof(double) * (size_t)n * 2u,
-                   cudaMemcpyDeviceToHost) != cudaSuccess)
+    /* Download corresponds to cudaMemcpy/hipMemcpy with device-to-host direction. */
+    if (pangulu_device_copy(h, x, d_x, sizeof(double) * (size_t)n * 2u,
+                   PANGULU_COPY_DEVICE_TO_HOST) != PANGULU_STATUS_SUCCESS)
         goto done;
     for (int k = 0; k < 2; ++k)
     {
@@ -130,7 +134,7 @@ int main(int argc, char **argv)
             goto done;
     }
     rc = 0;
-/* Destroy descriptors and handle before freeing the arrays they reference. */
+/* Destroy descriptors before their buffers, then destroy the handle. */
 done:
     if (X)
         pangulu_vector_destroy(X);
@@ -138,13 +142,15 @@ done:
         pangulu_vector_destroy(B);
     if (A)
         pangulu_matrix_destroy(A);
-    if (h)
+    if (h) {
+        /* Like cudaFree/hipFree; release these wrapper allocations before the handle. */
+        pangulu_device_free(h, d_x);
+        pangulu_device_free(h, d_b);
+        pangulu_device_free(h, d_values);
+        pangulu_device_free(h, d_idx);
+        pangulu_device_free(h, d_ptr);
         pangulu_destroy(h);
-    cudaFree(d_x);
-    cudaFree(d_b);
-    cudaFree(d_values);
-    cudaFree(d_idx);
-    cudaFree(d_ptr);
+    }
     free(x);
     free(b);
     spmat_free(&a);

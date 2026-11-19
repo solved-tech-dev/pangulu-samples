@@ -16,7 +16,6 @@
  */
 #include "pangulu.h"
 
-#include <cuda_runtime.h>
 #include <math.h>
 #include <stdint.h>
 #include <float.h>
@@ -178,22 +177,24 @@ static float *to_float32(const double *src, int64_t count)
 
 /* Upload the three matrix arrays (ptr, idx, values) to the active device.
  * values_bytes is the total byte size of the typed values buffer. */
-static int upload_matrix_device(const int64_t *ptr, const int32_t *idx,
+/* Wraps the matching backend's cudaMalloc/hipMalloc and
+ * cudaMemcpy/hipMemcpy operations for device matrix buffers. */
+static int upload_matrix_device(pangulu_handle_t h, const int64_t *ptr, const int32_t *idx,
                                 const void *values, int64_t n, int64_t nnz,
                                 size_t values_bytes, int64_t **d_ptr,
                                 int32_t **d_idx, void **d_values)
 {
     const size_t ptr_bytes = sizeof(int64_t) * (size_t)(n + 1);
     const size_t idx_bytes = sizeof(int32_t) * (size_t)nnz;
-    if (cudaMalloc((void **)d_ptr, ptr_bytes) != cudaSuccess ||
-        cudaMalloc((void **)d_idx, idx_bytes) != cudaSuccess ||
-        cudaMalloc(d_values, values_bytes) != cudaSuccess ||
-        cudaMemcpy(*d_ptr, ptr, ptr_bytes, cudaMemcpyHostToDevice) !=
-            cudaSuccess ||
-        cudaMemcpy(*d_idx, idx, idx_bytes, cudaMemcpyHostToDevice) !=
-            cudaSuccess ||
-        cudaMemcpy(*d_values, values, values_bytes, cudaMemcpyHostToDevice) !=
-            cudaSuccess)
+    if (pangulu_device_alloc(h, (void **)d_ptr, ptr_bytes) != PANGULU_STATUS_SUCCESS ||
+        pangulu_device_alloc(h, (void **)d_idx, idx_bytes) != PANGULU_STATUS_SUCCESS ||
+        pangulu_device_alloc(h, d_values, values_bytes) != PANGULU_STATUS_SUCCESS ||
+        pangulu_device_copy(h, *d_ptr, ptr, ptr_bytes, PANGULU_COPY_HOST_TO_DEVICE) !=
+            PANGULU_STATUS_SUCCESS ||
+        pangulu_device_copy(h, *d_idx, idx, idx_bytes, PANGULU_COPY_HOST_TO_DEVICE) !=
+            PANGULU_STATUS_SUCCESS ||
+        pangulu_device_copy(h, *d_values, values, values_bytes, PANGULU_COPY_HOST_TO_DEVICE) !=
+            PANGULU_STATUS_SUCCESS)
     {
         return -1;
     }

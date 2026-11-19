@@ -24,8 +24,8 @@ choose a package with the interfaces described in the
 
 ## Toolkit and Runtime Paths
 
-Install and initialize the development environment required by the selected
-package. The common rules accept generic installation-path overrides:
+Install the GPU driver and runtime libraries required by the selected
+package. The examples build with a C compiler and `pangulu.h`. The common rules accept generic installation-path overrides:
 
 ```bash
 make -C 01_double LIBRARY_ROOT=/path/to/package TOOLKIT_ROOT=/path/to/toolkit

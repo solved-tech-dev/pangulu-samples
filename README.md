@@ -65,6 +65,12 @@ Follow the selected package's README for supported GPU models, architectures,
 compiler requirements, and toolkit/runtime versions. Keep its runtime files
 and architecture subdirectories intact.
 
+All examples use `PANGULU_MEMORY_DEVICE` vectors and the device-buffer
+functions in `pangulu.h`. No CUDA or HIP development headers are needed.
+The selected package's driver and runtime libraries are required.
+See [device buffers](docs/PRODUCT_GUIDE.md#device-buffers) for native
+CUDA and HIP interoperation.
+
 ### Library Package and License
 
 1. Download the package for your target GPU and purchase its license at

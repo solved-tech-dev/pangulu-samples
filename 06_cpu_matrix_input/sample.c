@@ -53,11 +53,13 @@ int main(int argc, char **argv)
         PANGULU_STATUS_SUCCESS)
         goto done;
     /* RHS and solution always use separate GPU buffers, even for host matrix input. */
-    if (cudaMalloc((void **)&d_b, sizeof(double) * (size_t)n) != cudaSuccess ||
-        cudaMalloc((void **)&d_x, sizeof(double) * (size_t)n) != cudaSuccess ||
-        cudaMemcpy(d_b, b, sizeof(double) * (size_t)n,
-                   cudaMemcpyHostToDevice) != cudaSuccess ||
-        cudaMemset(d_x, 0, sizeof(double) * (size_t)n) != cudaSuccess)
+    /* Allocation wraps cudaMalloc/hipMalloc and copies wrap cudaMemcpy/hipMemcpy.
+     * Buffers from the matching native runtime also work as DEVICE input.
+     * Use the handle's GPU and finish uploads before calling the solver. */
+    if (pangulu_device_alloc(h, (void **)&d_b, sizeof(double) * (size_t)n) != PANGULU_STATUS_SUCCESS ||
+        pangulu_device_alloc(h, (void **)&d_x, sizeof(double) * (size_t)n) != PANGULU_STATUS_SUCCESS ||
+        pangulu_device_copy(h, d_b, b, sizeof(double) * (size_t)n,
+                   PANGULU_COPY_HOST_TO_DEVICE) != PANGULU_STATUS_SUCCESS)
         goto done;
     /* The matrix stays in host memory; the library uploads it internally. */
     /* Describe existing arrays; the application retains their ownership. */
@@ -76,14 +78,15 @@ int main(int argc, char **argv)
     if (run_analysis_numeric_solve(h, A, X, B) != 0)
         goto done;
     /* Download only for application-side validation against the original system. */
-    if (cudaMemcpy(x, d_x, sizeof(double) * (size_t)n,
-                   cudaMemcpyDeviceToHost) != cudaSuccess)
+    /* Download corresponds to cudaMemcpy/hipMemcpy with device-to-host direction. */
+    if (pangulu_device_copy(h, x, d_x, sizeof(double) * (size_t)n,
+                   PANGULU_COPY_DEVICE_TO_HOST) != PANGULU_STATUS_SUCCESS)
         goto done;
     /* Report residual quality separately from API completion; retain NaN/Inf. */
     if (report_residual(&a, x, b) != 0)
         goto done;
     rc = 0;
-/* Destroy descriptors and handle before freeing the arrays they reference. */
+/* Destroy descriptors before their buffers, then destroy the handle. */
 done:
     if (X)
         pangulu_vector_destroy(X);
@@ -91,10 +94,12 @@ done:
         pangulu_vector_destroy(B);
     if (A)
         pangulu_matrix_destroy(A);
-    if (h)
+    if (h) {
+        /* Like cudaFree/hipFree; release these wrapper allocations before the handle. */
+        pangulu_device_free(h, d_x);
+        pangulu_device_free(h, d_b);
         pangulu_destroy(h);
-    cudaFree(d_x);
-    cudaFree(d_b);
+    }
     free(x);
     free(b);
     spmat_free(&a);

@@ -20,9 +20,10 @@ with these sources. No product implementation or package is included here.
 | --- | --- |
 | `pangulu_handle_t` | Solver context, licensed-device selection, configuration, and retained factor state |
 | `pangulu_matrix_t` | Descriptor for caller-owned sparse matrix arrays |
-| `pangulu_vector_t` | Descriptor for caller-owned device RHS or solution storage |
+| `pangulu_vector_t` | Descriptor for caller-owned host or device RHS or solution storage |
 
-The matrix and vectors must agree on dimensions, value type, and device.
+The matrix and vectors must agree on dimensions and value type. DEVICE
+buffers must reside on the device selected by the handle.
 Matrices are square, zero-based CSC or CSR. Samples use scalar block size `1`
 and operation `PANGULU_LU`. Compressed pointers use `PANGULU_R_64I` (`int64_t`)
 and indices use `PANGULU_R_32I` (`int32_t`). The sample reader limits matrix
@@ -36,8 +37,11 @@ order to `INT32_MAX`.
 | `PANGULU_C_64F` | Interleaved real/imaginary `double` components | Complex double-precision sample |
 
 Matrices may use `PANGULU_MEMORY_HOST` or `PANGULU_MEMORY_DEVICE` as demonstrated
-by the samples. RHS and solution buffers are device-resident. Host matrix input
-does not turn factorization or solve into CPU computation.
+by the samples. The examples use DEVICE vectors so SOLVE does not move either
+vector between CPU and GPU memory. Versions with HOST vector support also
+accept CPU arrays for the RHS and solution. Each solve uploads a HOST RHS
+and downloads a HOST solution. Use DEVICE for data already on the GPU,
+especially when solving repeatedly or chaining GPU operations.
 
 ## Lifecycle and Configuration
 
@@ -73,6 +77,25 @@ Reordering and reuse are independent options even when they use the same value
 names. These are direct solves, without an iterative method or preconditioner.
 No `config.json` is read by these samples; edit the explicit C API configuration
 in `sample.c` and clean/rebuild when changing it.
+
+## Device Buffers
+
+The device-buffer functions let the examples use a normal C compiler and
+`pangulu.h`. Select a package that exports all three functions and install
+that package's GPU driver and runtime libraries.
+
+| PanguLU | CUDA | HIP |
+| --- | --- | --- |
+| `pangulu_device_alloc` | `cudaMalloc` | `hipMalloc` |
+| `pangulu_device_copy` | `cudaMemcpy` | `hipMemcpy` |
+| `pangulu_device_free` | `cudaFree` | `hipFree` |
+
+The wrappers select the handle's GPU, and a successful copy is complete when
+it returns. Applications already using CUDA or HIP can allocate and transfer
+their own buffers with the matching backend, then pass those pointers as
+`PANGULU_MEMORY_DEVICE`. Keep the buffers on the handle's GPU, complete native
+uploads before SOLVE and release buffers with the allocator that created them.
+The CUDA and HIP columns describe each platform's equivalent operations.
 
 ## Matrix and Vector Descriptors
 
@@ -161,7 +184,8 @@ objects reference them. After execution and verification:
 
 1. Destroy vector descriptors with `pangulu_vector_destroy`.
 2. Destroy matrix descriptors with `pangulu_matrix_destroy`.
-3. Destroy the handle with `pangulu_destroy`.
+3. Free wrapper-allocated buffers with `pangulu_device_free`, then destroy the
+   handle with `pangulu_destroy`.
 4. Release application-owned device and host buffers.
 
 The complete error and cleanup paths are shown in each `sample.c`. For user
