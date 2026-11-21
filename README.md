@@ -19,7 +19,8 @@ pangulu-samples/
 ├── Makefile                   # Build or clean all samples
 ├── common.mk                  # Shared build, run, and clean rules
 ├── common/
-│   └── sample_common.h        # Input, transfer, timing, and verification helpers
+│   ├── sample_common.h        # Input, transfer, timing, and verification helpers
+│   └── sample_ordering.h      # Shared reordering example driver
 ├── libraries/
 │   ├── README.md              # Package and license setup
 │   └── <package-name>/        # User-supplied complete package; not committed
@@ -42,7 +43,8 @@ pangulu-samples/
 ├── 06_cpu_matrix_input/
 ├── 07_l0_reordering/
 ├── 08_multi_rhs/
-└── 09_refactor/
+├── 09_refactor/
+└── 10_reordering_nd/ … 17_reordering_none/
 ```
 
 Each sample contains `sample.c`, a short `Makefile`, and `README.md`.
@@ -58,7 +60,8 @@ samples do not need `config.json`.
 - The GPU and the toolkit/runtime required by the selected package.
 - A C compiler and GNU Make.
 - A PanguLU package with the vector constructors and device-buffer interfaces
-  described in the [product guide](docs/PRODUCT_GUIDE.md).
+  described in the [product guide](docs/PRODUCT_GUIDE.md). Samples 10–17
+  also require the PanguLU 26.48 reordering API.
 - A valid license matching the package and target device.
 
 Follow the selected package's README for supported GPU models, architectures,
@@ -131,8 +134,7 @@ make -C 01_double run LIBRARY_ROOT=/path/to/package
 
 Use the same package path for both commands. `make run` sets the selected
 package and runtime library search paths for the launched program. If the
-required development environment uses a nondefault installation path, including
-a HIP installation, see [toolkit and runtime paths](docs/TROUBLESHOOTING.md#toolkit-and-runtime-paths).
+GPU runtime is installed in a nondefault location, see [toolkit and runtime paths](docs/TROUBLESHOOTING.md#toolkit-and-runtime-paths).
 
 The same source files build against either backend. The sample executables
 record `libpangulu.so` and the system C and math libraries as direct
@@ -161,6 +163,14 @@ package, compiler settings, or the toolkit/runtime environment.
 | [07_l0_reordering](07_l0_reordering/README.md) | Direct LU, L0 reordering | CSC, device memory | Real double |
 | [08_multi_rhs](08_multi_rhs/README.md) | Direct LU, shared factors for multiple RHS | CSC, device memory | Real double |
 | [09_refactor](09_refactor/README.md) | Direct LU, refactorization with pattern reuse | CSC, device memory | Real double |
+| [10_reordering_nd](10_reordering_nd/README.md) | Nested dissection | CSR, device memory | Real double |
+| [11_reordering_amd](11_reordering_amd/README.md) | Approximate minimum degree | CSR, device memory | Real double |
+| [12_reordering_rcm](12_reordering_rcm/README.md) | Reverse Cuthill–McKee | CSR, device memory | Real double |
+| [13_reordering_btf](13_reordering_btf/README.md) | Block triangular form | CSR, device memory | Real double |
+| [14_reordering_btf_colamd](14_reordering_btf_colamd/README.md) | BTF with column approximate minimum degree | CSR, device memory | Real double |
+| [15_reordering_dm](15_reordering_dm/README.md) | Dulmage–Mendelsohn | CSR, device memory | Real double |
+| [16_reordering_given_perm](16_reordering_given_perm/README.md) | Independent user-supplied row and column orders | CSR, device memory | Real double |
+| [17_reordering_none](17_reordering_none/README.md) | Keep the original order | CSR, device memory | Real double |
 
 *Single-precision samples convert input to single precision for the solve and
 validate against the original double-precision system. Host-memory matrix input
@@ -182,13 +192,14 @@ and RHS layout. Each sample README links to its default files and argument order
 - Real samples accept real, integer, or pattern input; pattern values are `1`.
   Complex samples require complex input and store interleaved real/imaginary
   components. Solve precision is listed above.
-- RHS files contain `n` real values or `n` real/imaginary pairs without a header.
+- For samples 01–09, RHS files contain `n` real values or `n` real/imaginary pairs without a header.
   Sample 08 packs columns in column-major order with leading dimension `n`.
 - Sample 09 requires identical sparse patterns, including compressed pointers
   and indices, for both matrices. Only numerical values may change.
-- Inputs are fixed text files with no random seed or reference-solution field.
-  RHS values are read from files rather than generated randomly. Configuration
-  is set in `sample.c`; no JSON file is read.
+- Samples 10–17 take one matrix path and compute `b = A * 1` from the original
+  matrix. The GIVEN_PERM sample expects the row and column permutations in
+  `sample.c` to match the input matrix.
+- Input files are fixed text. Configuration is set in `sample.c`.
 
 Replace inputs without editing build rules. From the repository root:
 
@@ -208,8 +219,8 @@ and 09 label each RHS result. Timing excludes input parsing, application data
 transfers, and host residual checks. A direct solve has no iteration count or
 iterative convergence field.
 
-API success alone does not establish numerical accuracy. Each solution is
-checked independently on the host against the original system `r = b - A*x`:
+Each solution is checked independently on the host against the original system
+`r = b - A*x`. Samples 01–09 report the infinity-norm relative residual.
 
 ```text
 relative residual = ||r||_inf / ||b||_inf
@@ -220,6 +231,8 @@ complex magnitude. For zero RHS, the sample checks the absolute infinity norm
 `||r||_inf` and notes that the relative residual is undefined. Accumulation uses
 `long double`; single-precision solves use the original double-precision input
 for verification.
+
+The ordering samples (10–17) report `||r||_2 / ||b||_2` and require a nonzero RHS.
 
 `verification: PASS` means the original-system residual is finite and no greater
 than `1e-10` for double-precision solves or `1e-5` for single-precision solves.

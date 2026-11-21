@@ -1,0 +1,16 @@
+%%MatrixMarket matrix coordinate real general
+% Natural ordering already has bandwidth one.
+5 5 13
+1 1 12
+1 2 -1
+2 1 -1
+2 2 12
+2 3 -1
+3 2 -1
+3 3 12
+3 4 -1
+4 3 -1
+4 4 12
+4 5 -1
+5 4 -1
+5 5 12

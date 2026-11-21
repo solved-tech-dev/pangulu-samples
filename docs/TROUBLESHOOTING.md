@@ -25,15 +25,15 @@ choose a package with the interfaces described in the
 
 Install the GPU driver and runtime libraries required by the selected
 package. The examples build with a C compiler and `pangulu.h`. Set
-`TOOLKIT_ROOT` to your CUDA or HIP installation when building and running:
+`TOOLKIT_ROOT` to your CUDA or HIP installation when running:
 
 ```bash
-make -C 01_double LIBRARY_ROOT=/path/to/package TOOLKIT_ROOT=/path/to/toolkit
+make -C 01_double LIBRARY_ROOT=/path/to/package
 make -C 01_double run LIBRARY_ROOT=/path/to/package TOOLKIT_ROOT=/path/to/toolkit
 ```
 
 If runtime libraries are outside the detected `lib64/` or `lib/` location,
-supply `TOOLKIT_LIB_DIR=/path/to/runtime/lib` to both commands. For a toolkit
+supply `TOOLKIT_LIB_DIR=/path/to/runtime/lib` to `make run`. For a toolkit
 with runtime libraries in several directories, pass a colon-separated list,
 such as `TOOLKIT_LIB_DIR=/opt/dtk/lib:/opt/dtk/llvm/lib`. Compiler and runtime
 versions must meet the package's requirements. Unsupported host or GPU architectures require the
@@ -53,8 +53,8 @@ export LD_LIBRARY_PATH="/path/to/package/lib:/path/to/runtime/lib${LD_LIBRARY_PA
 ```
 
 Retain additional architecture or runtime paths specified by the package's
-README. The sample build uses `-rpath-link` for link-time lookup. At runtime,
-the loader finds the selected package and follows its dependencies. Check the
+README. At runtime, the loader finds the selected package and follows its
+dependencies. Check the
 executable's direct dependencies with `readelf -d ./sample` and the resolved
 libraries with `ldd ./sample` under the target environment. If the loader reports
 a missing `GLIBC_*` version, check the requirements of both the executable

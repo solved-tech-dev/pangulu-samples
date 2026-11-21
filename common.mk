@@ -14,10 +14,9 @@ TARGET := sample
 CC ?= gcc
 CFLAGS ?= -O3 -std=c11 -Wall -Wextra -Wno-unused-function
 CPPFLAGS += -I"$(SAMPLES_ROOT)/common" -I"$(LIBRARY_DIR)/include"
-# Resolve the selected SDK's indirect dependencies at link time without
-# recording build-machine paths or backend runtime libraries in the sample ELF.
-LDFLAGS += -L"$(LIBRARY_DIR)/lib" -Wl,--no-copy-dt-needed-entries \
-    -Wl,-rpath-link,"$(LIBRARY_DIR)/lib" -Wl,-rpath-link,"$(TOOLKIT_LIB_DIR)"
+# Link the public API. The runtime loader resolves the package's backend
+# dependencies on the target machine.
+LDFLAGS += -L"$(LIBRARY_DIR)/lib" -Wl,--no-copy-dt-needed-entries -Wl,--allow-shlib-undefined
 LDLIBS += -lpangulu -lm
 
 .PHONY: all check run clean
@@ -31,7 +30,7 @@ check:
 	@test -f "$(LIBRARY_DIR)/lib/libpangulu.so" || { \
 	    printf '%s\n' 'Missing package library: lib/libpangulu.so' >&2; exit 1; }
 
-$(TARGET): sample.c $(SAMPLES_ROOT)/common/sample_common.h Makefile $(SAMPLES_ROOT)/common.mk | check
+$(TARGET): sample.c $(SAMPLES_ROOT)/common/sample_common.h $(SAMPLE_HEADERS) Makefile $(SAMPLES_ROOT)/common.mk | check
 	$(CC) $(CPPFLAGS) $(CFLAGS) sample.c -o $@ $(LDFLAGS) $(LDLIBS)
 
 run: all

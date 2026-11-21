@@ -77,6 +77,35 @@ names. These are direct solves, without an iterative method or preconditioner.
 No `config.json` is read by these samples; edit the explicit C API configuration
 in `sample.c` and clean/rebuild when changing it.
 
+## Ordering Selection
+
+PanguLU 26.48 provides `pangulu_reordering_algo_set`. The ordering examples
+set `PANGULU_REORDERING_METHOD` to `L0` and select one of the following values
+from `pangulu_reordering_algo_t`.
+
+| Enum value | Sample |
+| --- | --- |
+| `PANGULU_REORDERING_ALGO_ND` | [ND](../10_reordering_nd/README.md) |
+| `PANGULU_REORDERING_ALGO_AMD` | [AMD](../11_reordering_amd/README.md) |
+| `PANGULU_REORDERING_ALGO_RCM` | [RCM](../12_reordering_rcm/README.md) |
+| `PANGULU_REORDERING_ALGO_BTF` | [BTF](../13_reordering_btf/README.md) |
+| `PANGULU_REORDERING_ALGO_BTF_COLAMD` | [BTF-COLAMD](../14_reordering_btf_colamd/README.md) |
+| `PANGULU_REORDERING_ALGO_DM` | [DM](../15_reordering_dm/README.md) |
+| `PANGULU_REORDERING_ALGO_GIVEN_PERM` | [User-supplied permutations](../16_reordering_given_perm/README.md) |
+| `PANGULU_REORDERING_ALGO_NONE` | [No reordering](../17_reordering_none/README.md) |
+
+For `GIVEN_PERM`, first pass the matrix to ANALYSIS. If that returns
+`PANGULU_STATUS_REORDERING_PERM_NOT_SET`, call
+`pangulu_reordering_perm_set(handle, row_perm, col_perm)` and retry ANALYSIS.
+Each permutation is an array of `int` with one entry per row or column. The
+entries are zero-based original indices in the desired new order. The two arrays
+can differ.
+
+The ordering samples use `pangulu_matrix_create_sym` with
+`PANGULU_MATRIX_GENERAL`, `PANGULU_MATRIX_VIEW_FULL`, and a CSR input.
+The public calls in these samples select the desired order and solve the
+system. The example's residual is measured in the original coordinates.
+
 ## Device Buffers
 
 The device-buffer functions let the examples use a normal C compiler and
@@ -163,11 +192,12 @@ not initialized, allocation failure, execution failure, license error, and
 unsupported operation; use the selected header for their exact enum names and
 available values. Check API status separately from numerical accuracy.
 
-After copying `X` to host memory, the shared helper independently computes
-`r = b - A*x` for the original system. It reports the RHS infinity norm and
+After copying `X` to host memory, the verification helpers independently compute
+`r = b - A*x` for the original system. Samples 01–09 report the RHS infinity norm and
 `||r||_inf / ||b||_inf`, using complex magnitudes for complex vectors. For zero
 RHS it checks `||r||_inf` instead. Residual accumulation uses `long double`.
 Single-precision samples retain the original double-precision input for checking.
+Samples 10–17 report the L2 relative residual for their generated RHS.
 
 `PASS` requires a finite residual at most `1e-10` for double precision or `1e-5`
 for single precision; the absolute residual uses the same limit for zero RHS.

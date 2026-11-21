@@ -1,0 +1,10 @@
+%%MatrixMarket matrix coordinate real general
+% The sample supplies separate row and column permutations to recover this triangular order.
+4 4 7
+1 1 -1
+1 4 8
+2 3 5
+3 2 6
+3 4 2
+4 1 7
+4 3 1
